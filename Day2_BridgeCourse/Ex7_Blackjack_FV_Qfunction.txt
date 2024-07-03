@@ -1,0 +1,83 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Nov 15 10:34:30 2023
+
+@author: Admin
+"""
+
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Nov 15 10:14:51 2023
+
+@author: Admin
+"""
+
+# -*- coding: utf-8 -*-
+"""
+Created on Fri Sep  1 11:12:25 2023
+
+@author: Admin
+"""
+#Implementation of First-visit Monte Carlo Prediction for Blackjack environment(Q-function)
+import pandas as pd
+from collections import defaultdict
+import gymnasium as gym
+env=gym.make('Blackjack-v1',render_mode='human')
+env.reset()
+env.render()
+def policy(state):
+    if state[0]>19:
+        return 0
+    else:
+        return 1
+
+state = env.reset()
+state=state[0]
+print(state)
+print(policy(state))
+
+num_timesteps = 100
+def generate_episode(policy):
+    episode = []
+    state = env.reset()
+    state=state[0]
+    for t in range(num_timesteps):
+        action = policy(state)
+        next_state, reward, done, info,trans_prob = env.step(action)
+        episode.append(((state, action), reward))
+        #print("Done is",done)
+        if done:
+            break
+        state=next_state
+    return episode
+print(generate_episode(policy))
+total_return = defaultdict(float)
+N = defaultdict(int)
+num_iterations = 50
+for i in range(num_iterations):
+    episode = generate_episode(policy)
+    sa_pair, rewards = zip(*episode)
+    for t,sa  in enumerate(sa_pair):
+        if sa not in sa_pair[0:t]:
+            R = (sum(rewards[t:]))
+            total_return[sa] = total_return[sa] + R
+            N[sa] = N[sa] + 1        
+print(total_return[sa])
+print(N[sa])
+       
+total_return = pd.DataFrame(total_return.items(),columns=['state-action', 'total_return'])
+N = pd.DataFrame(N.items(),columns=['state-action', 'N'])
+df = pd.merge(total_return, N, on="state-action")
+print(df.head(10))
+df['QF'] = df['total_return']/df['N']
+print(df.head(10))
+print(df.shape)
+df[df['state-action']==(21,9,False)]['QF'].values
+df[df['state-action']==(5,8,False)]['QF'].values
+env.close()
+
+
+
+
+
+
